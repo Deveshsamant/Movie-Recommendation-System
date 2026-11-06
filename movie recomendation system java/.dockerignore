@@ -1,0 +1,15 @@
+# secrets
+config.json
+
+# generated, or fetched on first run
+target/
+data/
+cache/
+
+# not needed in the image
+.mvn/
+mvnw
+mvnw.cmd
+*.bat
+*.md
+.git*

@@ -1,0 +1,4 @@
+# cmd.exe can miss goto labels in batch files with Unix line endings, so keep these as CRLF
+# even though the repository's root .gitattributes normalises everything else to LF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
