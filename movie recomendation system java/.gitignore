@@ -1,0 +1,7 @@
+# Maven build output
+/target/
+
+# Personal TMDB key, MovieLens download, trained models and saved viewers
+/config.json
+/data/
+/cache/
