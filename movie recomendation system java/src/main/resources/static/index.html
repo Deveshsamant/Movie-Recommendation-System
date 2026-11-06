@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Narrow:wght@400;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/static/css/app.css?v=16" />
+<link rel="stylesheet" href="/static/css/overview.css?v=16" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23ec3013'/></svg>" />
 <script>
   /* Set the theme before first paint, otherwise the light palette flashes. */
@@ -68,6 +69,11 @@
       <div class="rail__ticks"><i></i><i></i><i></i></div>
     </div>
 
+    <button class="rail__start" id="startOverview">
+      <svg class="icon icon--fill" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3" /></svg>
+      <span><b>Start overview</b><small>Guided tour of the project · 15 steps</small></span>
+    </button>
+
     <button class="userbtn" id="userBtn" aria-expanded="false">
       <span class="userbtn__av" id="userAvatar">1</span>
       <span class="userbtn__meta">
@@ -122,6 +128,10 @@
       <button class="navitem" data-view="people">
         <svg class="icon" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" /></svg><span>Compare viewers</span>
       </button>
+      <div class="railnav__group">Explain</div>
+      <button class="navitem" data-view="guide">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" /></svg><span>Project guide</span>
+      </button>
     </nav>
 
     <div class="railfoot">
@@ -142,6 +152,7 @@
     <div class="topbar">
       <b>Movie Recommender System</b>
       <span style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn--primary" id="startOverviewSm">Start overview</button>
         <button class="btn btn--ghost" id="themeToggleSm">Theme</button>
         <button class="btn btn--ghost" id="scoreToggleSm">Scores</button>
       </span>

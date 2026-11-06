@@ -2,6 +2,7 @@ package com.movierec.web;
 
 import static com.movierec.math.Num.round;
 
+import com.movierec.dataset.DatasetSummary;
 import com.movierec.dataset.Movie;
 import com.movierec.engine.Engine;
 import com.movierec.math.CsrMatrix;
@@ -43,6 +44,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class ApiController {
 
     private final Engine e;
+    private volatile Map<String, Object> overviewSummary;
 
     public ApiController(Engine engine) {
         this.e = engine;
@@ -75,6 +77,17 @@ public class ApiController {
     @GetMapping("/enrich/status")
     public Map<String, Object> enrichStatus() {
         return e.enrichmentStatus();
+    }
+
+    /** Statistics about the ratings themselves, for the charts in the guided overview. */
+    @GetMapping("/overview")
+    public Map<String, Object> overview() {
+        Map<String, Object> summary = overviewSummary;
+        if (summary == null) {
+            summary = DatasetSummary.of(e.data);
+            overviewSummary = summary;
+        }
+        return summary;
     }
 
     @PostMapping("/content/rebuild")

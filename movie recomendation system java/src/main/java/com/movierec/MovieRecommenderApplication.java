@@ -7,6 +7,9 @@ import com.movierec.engine.Engine;
 import com.movierec.tmdb.Enricher;
 import com.movierec.tmdb.TmdbClient;
 import java.awt.Desktop;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
@@ -48,11 +51,22 @@ public class MovieRecommenderApplication {
         // makes the app unreachable from outside it.
         String envPort = System.getenv("PORT");
         boolean deployed = envPort != null && !envPort.isEmpty();
-        int port = deployed ? Integer.parseInt(envPort) : config.integer("port");
         String envHost = System.getenv("HOST");
         String host = envHost != null && !envHost.isEmpty() ? envHost
                 : deployed ? "0.0.0.0" : config.string("host");
-        String url = "http://" + (host.equals("0.0.0.0") || host.equals("127.0.0.1") ? "localhost" : host) + ":" + port;
+        int port = deployed ? Integer.parseInt(envPort) : config.integer("port");
+        Integer requested = requestedPort(args);
+        if (requested != null) {
+            port = requested;
+        } else if (!deployed) {
+            // On someone else's computer the usual port may already be taken.
+            int free = firstFreePort(host, port);
+            if (free != port) {
+                System.out.println("  port " + port + " is already in use, using " + free);
+            }
+            port = free;
+        }
+        String url ="http://" + (host.equals("0.0.0.0") || host.equals("127.0.0.1") ? "localhost" : host) + ":" + port;
 
         System.out.println();
         System.out.println("  Movie Recommender System - content, collaborative and hybrid");
@@ -72,12 +86,40 @@ public class MovieRecommenderApplication {
         }
     }
 
+    /** The value of a --server.port=N argument, which Spring Boot also honours, or null. */
+    private static Integer requestedPort(String[] args) {
+        for (String arg : args) {
+            if (arg.startsWith("--server.port=")) {
+                return Integer.valueOf(arg.substring("--server.port=".length()));
+            }
+        }
+        return null;
+    }
+
+    /** The first port from start onwards that can be opened, or start if none in range can. */
+    private static int firstFreePort(String host, int start) {
+        for (int port = start; port < start + 20; port++) {
+            try (ServerSocket probe = new ServerSocket(port, 1, InetAddress.getByName(host))) {
+                return port;
+            } catch (IOException taken) {
+                // try the next one
+            }
+        }
+        return start;
+    }
+
     private static void openBrowser(String url) {
         try {
             if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
                 Desktop.getDesktop().browse(URI.create(url));
+                return;
             }
-        } catch (Exception e) {
+        } catch (Exception | LinkageError e) {
+            // a minimal Linux system may have no desktop libraries: try the next way
+        }
+        try {
+            new ProcessBuilder("xdg-open", url).start();
+        } catch (IOException e) {
             System.out.println("  could not open a browser; visit " + url);
         }
     }

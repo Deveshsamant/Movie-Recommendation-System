@@ -40,10 +40,6 @@
   --shadow-md:0 3px 10px color-mix(in srgb,#2d2b2b 16%,transparent);
   --shadow-lg:0 12px 32px color-mix(in srgb,#2d2b2b 22%,transparent);
 
-  /* the reel is a deliberately inverted surface in both themes */
-  --reel-bg:#201e1d;
-  --reel-fg:#f3f2f2;
-
   --rule:2px solid var(--color-divider);
   --hair:1px solid var(--color-neutral-200);
   --pad:34px;
@@ -89,9 +85,6 @@
   --shadow-md:0 3px 12px rgba(0,0,0,.6);
   --shadow-lg:0 14px 40px rgba(0,0,0,.7);
 
-  --reel-bg:#08080a;
-  --reel-fg:#f3f2f2;
-
   color-scheme:dark;
 }
 
@@ -134,10 +127,7 @@ svg{display:block}
 @keyframes slideL{from{transform:translateX(100%)}to{transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes marchBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-@keyframes kenburns{from{transform:scale(1.02)}to{transform:scale(1.14)}}
-@keyframes numIn{from{opacity:0;transform:translateY(34px) scale(.86)}to{opacity:1;transform:none}}
 @keyframes wipeUp{from{clip-path:inset(100% 0 0 0);transform:translateY(14px)}to{clip-path:inset(0 0 0 0);transform:none}}
-@keyframes tickAcross{from{width:0}to{width:100%}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;
@@ -551,17 +541,6 @@ html[data-scores="off"] .score-only{display:none !important}
 /* the meter is pinned to the bottom, so it lines up across the whole shelf */
 .tile__body .film__meter{margin-top:auto}
 
-.toprow{position:relative;flex:0 0 232px;display:flex;align-items:flex-end;padding:22px 0 22px 6px;
-  border-right:var(--hair);cursor:pointer}
-.toprow__n{font-family:var(--font-heading);font-size:96px;font-weight:900;letter-spacing:-.08em;
-  line-height:.72;color:var(--color-neutral-300)}
-.toprow__t{flex:1;min-width:0;padding-left:8px}
-.toprow__t b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-  font-family:var(--font-heading);font-size:14.5px;font-weight:800;
-  letter-spacing:-.02em;line-height:1.1;min-height:calc(2 * 1.1 * 14.5px)}
-.toprow__t small{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
-  font-weight:700;color:var(--color-neutral-600);margin-top:6px}
-
 .contile{flex:0 0 300px;border-right:var(--hair);cursor:pointer}
 .contile__art{position:relative;aspect-ratio:16/9;background:var(--color-neutral-200);
   border-bottom:var(--rule);overflow:hidden}
@@ -746,94 +725,6 @@ html[data-scores="off"] .score-only{display:none !important}
 .pick .stars{margin-top:auto}
 .modal__foot{display:flex;justify-content:flex-end;padding:16px 26px;border-top:var(--rule)}
 
-/* ── reel ─────────────────────────────────────────────────── */
-/* The reel stays a dark cinema surface in both themes. Re-pointing the two
-   ground tokens inside it means every rule below keeps working unedited. */
-.reel{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;
-  animation:fadeIn .26s ease;
-  --color-text:var(--reel-bg);
-  --color-bg:var(--reel-fg);
-  /* the surface is dark in BOTH themes, so the accent tints it uses must stay
-     light here rather than follow the page ramp */
-  --color-accent-400:#ff9783;
-  --color-accent-500:#ff563c;
-  background:var(--reel-bg);color:var(--reel-fg)}
-.reel__top{flex:none;display:flex;align-items:center;gap:16px;padding:16px 22px;
-  border-bottom:2px solid var(--color-bg)}
-.reel__top span.k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;opacity:.65}
-.reel__x{width:42px;height:42px;display:grid;place-items:center;border:2px solid var(--color-bg);
-  color:var(--color-bg)}
-.reel__x:hover{background:var(--color-accent);border-color:var(--color-accent)}
-.reel__ticks{flex:none;display:flex;gap:3px;padding:10px 22px}
-.reel__ticks button{flex:1;height:4px;padding:0;position:relative;overflow:hidden;cursor:pointer}
-.reel__body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-  overflow:hidden}
-.reel__art{position:relative;border-right:2px solid var(--color-bg);overflow:hidden;
-  background:var(--color-neutral-800);display:grid;place-items:center}
-.reel__art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-  animation:kenburns 7s ease-out both}
-.reel__art .plate{position:absolute;inset:0;background:var(--color-bg);animation:kenburns 7s ease-out both}
-.reel__num{position:relative;font-family:var(--font-heading);
-  font-size:clamp(76px,min(20vw,40vh),300px);font-weight:900;letter-spacing:-.08em;line-height:.8;
-  color:var(--color-text);animation:numIn .6s cubic-bezier(.2,.8,.3,1) both;
-  text-shadow:0 0 0 var(--color-text)}
-.reel__num--over{color:var(--color-bg);mix-blend-mode:difference}
-.reel__art i.rule{position:absolute;left:0;right:0;bottom:0;height:10px;background:var(--color-accent);
-  transform-origin:left;animation:marchBar .8s cubic-bezier(.2,.8,.3,1) both}
-.reel__side{padding:clamp(14px,2.6vh,40px) clamp(18px,3.4vw,46px);display:flex;flex-direction:column;
-  justify-content:center;overflow:hidden;min-height:0}
-.reel__verdict{font-size:clamp(9px,1.3vh,10px);letter-spacing:.18em;text-transform:uppercase;
-  font-weight:800;color:var(--color-accent);animation:riseIn .4s ease both}
-.reel__title{font-family:var(--font-heading);font-size:clamp(22px,min(4.4vw,6.4vh),60px);
-  font-weight:900;letter-spacing:-.045em;line-height:.98;margin-top:clamp(7px,1.4vh,12px);
-  animation:wipeUp .55s cubic-bezier(.2,.8,.3,1) both;animation-delay:.1s}
-.reel__meta{font-size:clamp(9.5px,1.5vh,11.5px);letter-spacing:.14em;text-transform:uppercase;
-  font-weight:700;opacity:.6;margin-top:clamp(8px,1.6vh,14px);animation:riseIn .45s ease both;
-  animation-delay:.2s}
-.reel__genres{display:flex;flex-wrap:wrap;gap:0;margin-top:clamp(9px,1.6vh,14px);
-  animation:riseIn .45s ease both;animation-delay:.24s}
-.reel__genres span{font-size:clamp(8.5px,1.2vh,10px);letter-spacing:.14em;text-transform:uppercase;
-  font-weight:800;padding:5px 9px;border:2px solid rgba(243,242,242,.34);margin:0 -2px -2px 0}
-.reel__synopsis{font-size:clamp(11px,1.75vh,13.5px);line-height:1.55;opacity:.9;
-  margin-top:clamp(10px,1.9vh,18px);max-width:52ch;text-wrap:pretty;
-  display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;
-  animation:riseIn .5s ease both;animation-delay:.3s}
-.reel__reason{font-size:clamp(10.5px,1.6vh,12.5px);line-height:1.5;opacity:.68;
-  margin-top:clamp(9px,1.6vh,14px);max-width:52ch;text-wrap:pretty;
-  padding-left:12px;border-left:3px solid var(--color-accent);
-  animation:riseIn .5s ease both;animation-delay:.36s}
-.reel__bars{margin-top:clamp(12px,2.6vh,28px);border-top:2px solid var(--color-bg);
-  animation:riseIn .5s ease both;animation-delay:.36s}
-.reel__bar{display:flex;align-items:center;gap:12px;padding:clamp(8px,1.5vh,14px) 0;
-  border-bottom:1px solid rgba(243,242,242,.22)}
-.reel__bar b{width:clamp(96px,11vw,130px);flex:none;font-size:clamp(9px,1.3vh,10px);
-  letter-spacing:.14em;text-transform:uppercase;font-weight:800}
-.reel__bar span.t{flex:1;min-width:0;height:clamp(9px,1.5vh,14px);background:rgba(243,242,242,.16)}
-.reel__bar span.t i{display:block;height:100%;transform-origin:left;
-  animation:marchBar .9s cubic-bezier(.2,.8,.3,1) both}
-.reel__bar span.v{width:66px;text-align:right;font-family:var(--mono);
-  font-size:clamp(11px,1.6vh,13px);font-weight:700;font-variant-numeric:tabular-nums}
-.reel__end{grid-column:1/-1;display:flex;flex-direction:column;justify-content:center;
-  padding:clamp(24px,6vw,72px)}
-.reel__end h2{font-family:var(--font-heading);font-size:clamp(30px,5vw,66px);font-weight:900;
-  letter-spacing:-.045em;line-height:1;margin-top:14px;max-width:26ch;
-  animation:wipeUp .6s cubic-bezier(.2,.8,.3,1) both;animation-delay:.1s}
-.reel__endstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-top:32px;
-  border-top:2px solid var(--color-bg);border-left:2px solid var(--color-bg);
-  animation:riseIn .5s ease both;animation-delay:.24s}
-.reel__endstats div{padding:18px 20px;border-right:2px solid var(--color-bg);
-  border-bottom:2px solid var(--color-bg)}
-.reel__endstats b{display:block;font-family:var(--font-heading);font-size:30px;font-weight:800;
-  letter-spacing:-.04em;font-variant-numeric:tabular-nums}
-.reel__endstats span{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
-  font-weight:700;opacity:.6;margin-top:7px}
-.reel__foot{flex:none;display:flex;align-items:center;padding:14px 22px;border-top:2px solid var(--color-bg)}
-.reel__foot .btn--icon{border-color:var(--color-bg);color:var(--color-bg)}
-.reel__foot .btn--icon:hover{background:var(--color-accent);border-color:var(--color-accent)}
-.reel__count{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;opacity:.7}
-.reel .btn--ghost{border-color:var(--color-bg);color:var(--color-bg)}
-.reel .btn--ghost:hover{background:var(--color-accent);border-color:var(--color-accent)}
-
 /* ── misc ─────────────────────────────────────────────────── */
 .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:120;padding:13px 22px;
   background:var(--color-text);color:var(--color-bg);font-size:13px;font-weight:600;
@@ -868,16 +759,7 @@ html[data-scores="off"] .score-only{display:none !important}
   .hgrid,.three-up,.billboard{grid-template-columns:minmax(0,1fr)}
   .drawer{width:100vw}
   .stage{height:340px}
-  .reel__body{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(120px,30%) minmax(0,1fr)}
-  .reel__art{border-right:0;border-bottom:2px solid var(--color-bg)}
   .films{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
   .billboard__l{min-height:auto;padding:28px var(--pad)}
   .billboard__r{min-height:280px}
-}
-@media (max-height:660px){
-  .reel__synopsis{-webkit-line-clamp:2}
-  .reel__reason{display:none}
-}
-@media (max-height:520px){
-  .reel__synopsis,.reel__genres{display:none}
 }

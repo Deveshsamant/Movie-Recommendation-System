@@ -4,7 +4,7 @@ REM  Movie Recommender System (Java) - one-time setup for a new Windows machine
 REM
 REM  Builds the app with the bundled Maven Wrapper, saves your TMDB key, downloads
 REM  MovieLens, fetches film metadata and pre-trains every model.
-REM  Run this once. Afterwards, use run.bat.
+REM  Run this once. Afterwards, use START-Windows.bat.
 REM ===========================================================================
 setlocal
 title Movie Recommender System (Java) - Setup
@@ -96,7 +96,7 @@ echo.
 echo   ========================================
 echo   Setup complete.
 echo.
-echo   Double-click run.bat to start the app.
+echo   Double-click START-Windows.bat to start the app.
 echo.
 pause
 exit /b 0

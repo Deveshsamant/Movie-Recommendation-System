@@ -2,18 +2,21 @@
 
 import { api } from "./api.js?v=16";
 import {
-  $, $$, el, esc, fmt, RED, INK, ICON,
+  $, $$, el, esc, fmt, RED, INK, CF, ICON,
   poster, caption, filmCard, emptyState, loading, toast,
-  mathRow, mathTotal, radar, convergence, sankey, parallel, venn,
+  mathRow, radar, convergence, venn,
 } from "./ui.js?v=16";
+import { barList, chartCard } from "./charts.js?v=16";
 import { openDrawer } from "./drawer.js?v=16";
-import { openReel } from "./reel.js?v=16";
 import * as scenes from "./scenes.js?v=16";
 
-const head = (kicker, kickerCls, title, lede) => `
+const plain = (text) => `<div class="plain"><b>In simple words</b><p>${text}</p></div>`;
+
+const head = (kicker, kickerCls, title, lede, simple) => `
   <span class="kicker ${kickerCls}">${esc(kicker)}</span>
   <h1 class="display">${esc(title)}</h1>
-  <p class="lede">${lede}</p>`;
+  <p class="lede">${lede}</p>
+  ${simple ? plain(simple) : ""}`;
 
 const cell = (value, label, sub = "") =>
   `<div class="cell"><b>${value}</b><span>${esc(label)}</span>${sub ? `<small>${esc(sub)}</small>` : ""}</div>`;
@@ -36,7 +39,6 @@ export async function browse(host, state) {
       () => state.go("rate")));
     return;
   }
-  state.reelData = data.reel;
 
   const hero = data.hero;
   const wrap = el(`<div></div>`);
@@ -58,7 +60,7 @@ export async function browse(host, state) {
           <div><b>★ ${fmt.n(hero.avg_rating, 1)}</b><span>${fmt.int(hero.n_ratings)} ratings</span></div>
         </div>
         <div style="display:flex;flex-wrap:wrap;margin-top:26px">
-          <button class="btn btn--primary" id="playHero" style="padding:14px 22px">${ICON.play}Play</button>
+          <button class="btn btn--primary" id="startHero" style="padding:14px 22px">${ICON.play}Start overview</button>
           <button class="btn btn--ghost" id="whyHero" style="padding:14px 22px">${ICON.info}Why this?</button>
         </div>
       </div>
@@ -69,8 +71,11 @@ export async function browse(host, state) {
       </div>
     </div>`));
 
-  $("#playHero", wrap).addEventListener("click", () => openReel(state, 0));
+  $("#startHero", wrap).addEventListener("click", () => state.openOverview());
   $("#whyHero", wrap).addEventListener("click", () => openDrawer(hero, state, "hybrid"));
+
+  wrap.append(el(`<div style="padding:0 var(--pad)">${plain(
+    "This is what a viewer sees. Each row of films comes from a different recommendation method, so you can compare them on one screen. Click any film to see why it was chosen.")}</div>`));
 
   /* 3D shelf */
   const shelf = el(`
@@ -78,10 +83,10 @@ export async function browse(host, state) {
       <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;
         flex-wrap:wrap;padding:30px var(--pad) 12px">
         <div>
-          <div class="shelf-h__k" style="color:var(--color-accent-700)">Featured shelf · 3D</div>
+          <div class="shelf-h__k" style="color:var(--color-accent-700)">Hybrid - uses both methods</div>
           <h2 style="font-family:var(--font-heading);font-size:24px;font-weight:800;
-            letter-spacing:-.035em;margin-top:7px">Tonight's hybrid shortlist</h2>
-          <p class="sub">The ten films the blend ranks highest, on a rotating shelf.
+            letter-spacing:-.035em;margin-top:7px">Top 10 recommendations for this viewer</h2>
+          <p class="sub">The ten films the blend ranks highest.
             Use the arrows or click a card off to the side to bring it forward.</p>
         </div>
         <div style="display:flex">
@@ -96,12 +101,12 @@ export async function browse(host, state) {
   /* algorithm rails */
   data.rails.forEach((r) => {
     if (!r.films.length) return;
-    const tone = r.tone === "collaborative" ? INK : RED;
+    const tone = r.tone === "collaborative" ? CF : RED;
     const strip = el(`
       <div style="padding:30px 0 0">
         <div class="shelf-h">
           <div>
-            <div class="shelf-h__k" style="color:${tone === INK ? "var(--color-text)" : "var(--color-accent-700)"}">${esc(r.kicker)}</div>
+            <div class="shelf-h__k" style="color:${tone === CF ? "var(--color-text)" : "var(--color-accent-700)"}">${esc(r.kicker)}</div>
             <h2>${esc(r.title)}</h2>
           </div>
           <div style="display:flex">
@@ -119,31 +124,6 @@ export async function browse(host, state) {
     wrap.append(strip);
   });
 
-  /* top ten */
-  const top = el(`
-    <div>
-      <div style="padding:30px var(--pad) 12px;border-bottom:var(--rule)">
-        <div class="shelf-h__k" style="color:var(--color-accent-700)">Across all 610 viewers</div>
-        <h2 style="font-family:var(--font-heading);font-size:21px;font-weight:800;
-          letter-spacing:-.03em;margin-top:6px">Top 10 this week</h2>
-      </div>
-      <div class="railstrip"></div>
-    </div>`);
-  const topTrack = $(".railstrip", top);
-  data.top_ten.forEach((f) => {
-    const node = el(`
-      <div class="toprow">
-        <span class="toprow__n">${f.rank}</span>
-        <span class="toprow__t">
-          <b>${esc(f.title)}</b>
-          <small>${fmt.int(f.n)} ratings</small>
-        </span>
-      </div>`);
-    node.addEventListener("click", () => openDrawer(f, state));
-    topTrack.append(node);
-  });
-  wrap.append(top);
-
   wrap.append(el(`
     <div class="band">
       <div class="band__k">Every row above is a different algorithm</div>
@@ -154,7 +134,7 @@ export async function browse(host, state) {
 
   host.append(wrap);
 
-  /* The rotating shelf.
+  /* The shelf.
      Cards are built ONCE; spinning only rewrites their transform. Rebuilding
      the DOM each turn (as the first cut did) destroys the elements mid-
      transition, so nothing ever animates. */
@@ -215,17 +195,6 @@ export async function browse(host, state) {
     spot += Number(b.dataset.dir);
     place();
   }));
-
-  state.stopShelf?.();
-  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    const timer = setInterval(() => {
-      if (state.view !== "browse" || document.querySelector(".drawer, .reel")) return;
-      if (stage.matches(":hover")) return;
-      spot += 1;
-      place();
-    }, 5200);
-    state.stopShelf = () => clearInterval(timer);
-  }
 }
 
 function heroBlurb(hero) {
@@ -240,7 +209,7 @@ function heroBlurb(hero) {
 }
 
 function tile(f, tone, state) {
-  const isCollab = tone === INK;
+  const isCollab = tone === CF;
   const badge = isCollab ? `★ ${fmt.n(f.score, 1)}` : fmt.n(f.score, 3);
   const pct = isCollab ? (f.score / 5) * 100 : (f.score / 0.55) * 100;
   const node = el(`
@@ -257,8 +226,7 @@ function tile(f, tone, state) {
     </article>`);
   $(".tile__art", node).insertAdjacentHTML("beforeend",
     `<span class="tile__stripe" style="background:${tone}"></span>
-     <span class="tile__badge score-only" style="background:${tone};
-       color:${isCollab ? "var(--color-bg)" : "#fff"}">${badge}</span>`);
+     <span class="tile__badge score-only" style="background:${tone};color:#fff">${badge}</span>`);
   node.addEventListener("click", () => openDrawer(f, state));
   return node;
 }
@@ -269,7 +237,9 @@ export async function data(host, state) {
     "Every recommendation starts as a very empty grid",
     `MovieLens 100K — <b>610 viewers</b>, <b>9,724 films</b>, and only <b>100,836 ratings</b> between
      them. That is 1.7% of the grid filled in. Everything the three approaches do is an educated guess
-     about the other 98.3%.`) + `<div id="dBody"></div>`;
+     about the other 98.3%.`,
+    "Imagine a huge table with viewers as rows and films as columns. Each rating fills one cell. Almost every cell is empty, and the job of this project is to guess the empty ones.")
+    + `<div id="dBody"></div>`;
 
   const body = $("#dBody", host);
   body.append(loading("Reading the matrix"));
@@ -345,7 +315,8 @@ export async function rate(host, state) {
     "Rate films, and watch all three approaches wake up",
     `Content-based filtering starts working from your very first rating; collaborative filtering needs
      enough overlap with other viewers before it has anything to say. That gap is the cold-start
-     problem, and you can watch it close.`) + `
+     problem, and you can watch it close.`,
+    "Give a few films some stars and the system starts learning your taste straight away. Watch the status boxes below switch on as you add ratings.") + `
     <div id="rReady"></div>
     <div class="searchbar">
       <input type="text" id="rSearch" aria-label="Search the catalogue"
@@ -494,7 +465,8 @@ export async function content(host, state) {
     "It only ever read the film, never the crowd",
     `Each film becomes a bag of weighted terms — genres ×3, community tags ×2, TMDB keywords ×2,
      director ×2, cast. Your ratings collapse into a single <b>taste vector</b>, and every unseen film
-     is scored by cosine similarity against it. No other viewer is consulted at any point.`)
+     is scored by cosine similarity against it. No other viewer is consulted at any point.`,
+    "If you liked one space film, it suggests other space films. It only compares film descriptions and never asks other people.")
     + `<div id="cBody"></div>`;
 
   const body = $("#cBody", host);
@@ -539,11 +511,23 @@ export async function content(host, state) {
 
     <div class="note">
       <b>The ceiling of this approach.</b>
-      <p>The list is a mirror of what you already rated. That is not a bug, it is the definition.
-        Measured catalogue coverage is <b>18.4%</b> — 8× every other model — and novelty <b>6.84</b>,
-        the highest here. But Prec@10 is <b>0.0228</b>, the weakest of the three. Cold start, though,
-        is a non-issue: it works from your first rating.</p>
+      <p id="cCeiling">The list is a mirror of what you already rated. That is not a bug, it is the
+        definition. Cold start, though, is a non-issue: it works from your first rating.</p>
     </div>`;
+
+  api.evaluation(10).then((ev) => {
+    const t = ev.rows.find((r) => r.model === "content");
+    const others = ev.rows.filter((r) => r.model !== "content");
+    const widest = Math.max(...others.map((r) => r.coverage));
+    const line = $("#cCeiling", body);
+    if (line) {
+      line.innerHTML = `The list is a mirror of what you already rated. That is not a bug, it is the
+        definition. Measured catalogue coverage is <b>${fmt.n(t.coverage, 1)}%</b>, about
+        ${fmt.n(t.coverage / widest, 0)}× any other model, and novelty is <b>${fmt.n(t.novelty, 2)}</b>,
+        the highest here. But Prec@10 is <b>${fmt.n(t.precision, 4)}</b>, the weakest of all. Cold start,
+        though, is a non-issue: it works from your first rating.`;
+    }
+  }).catch(() => { /* the note still reads correctly without the figures */ });
 
   const grid = $("#cFilms", body);
   d.items.forEach((f, i) => {
@@ -563,7 +547,8 @@ export async function collab(host, state) {
     "It never once looked at what a film is about",
     `No genres, no cast, no keywords — only the pattern of who rated what. Films become similar because
      the same people liked them. This is where genuine surprises come from, and it is also why a
-     brand-new film is invisible to it.`) + `
+     brand-new film is invisible to it.`,
+    "People who liked the same films as you also liked these. It only compares rating patterns and never reads anything about the film.") + `
     <div class="seg" id="cfSeg" style="margin-top:24px">
       ${segs([["item-knn", "Item-based kNN"], ["user-knn", "User-based kNN"], ["svd", "Matrix factorisation"]],
         state.cfModel)}
@@ -746,9 +731,9 @@ export async function hybrid(host, state) {
       <span class="kicker kicker--ink">Hybrid</span>
     </div>
     <h1 class="display" style="margin-top:0">Each one covers the other's blind spot</h1>
-    <p class="lede">Content-based filtering cannot surprise you; collaborative filtering cannot start.
-      Blending them beats both — <b>Precision@10 of 0.0904</b> against 0.0840 for the best single
-      collaborative model and 0.0228 for content alone.</p>
+    <p class="lede" id="hLede">Content-based filtering cannot surprise you; collaborative filtering cannot
+      start. Blending them covers both weaknesses.</p>
+    ${plain("It asks both methods and combines their answers. The slider decides how much to trust each one.")}
 
     <div class="seg" id="hStrat" style="margin-top:24px">
       ${segs([["weighted", "Weighted"], ["switching", "Switching"], ["rank", "Rank fusion"],
@@ -765,7 +750,7 @@ export async function hybrid(host, state) {
       <div class="alpha-wrap">
         <span class="alpha-track">
           <i id="aLeft" style="background:${RED};width:${state.alpha * 100}%"></i>
-          <i style="background:${INK};flex:1"></i>
+          <i style="background:${CF};flex:1"></i>
         </span>
         <input class="alpha" type="range" min="0" max="100" value="${Math.round(state.alpha * 100)}"
           id="aRange" aria-label="Blend weight alpha" />
@@ -776,6 +761,18 @@ export async function hybrid(host, state) {
         id="hNote"></p>
     </div>
     <div id="hBody"></div>`;
+
+  api.evaluation(10).then((ev) => {
+    const by = (name) => ev.rows.find((r) => r.model === name);
+    const h = by("hybrid");
+    const lede = $("#hLede", host);
+    if (lede) {
+      lede.innerHTML = `Content-based filtering cannot surprise you; collaborative filtering cannot start.
+        Blending them beats both — <b>Precision@10 of ${fmt.n(h.precision, 4)}</b> against
+        ${fmt.n(by("item-knn").precision, 4)} for item-kNN alone and
+        ${fmt.n(by("content").precision, 4)} for content alone.`;
+    }
+  }).catch(() => { /* the opening sentence still reads correctly without the figures */ });
 
   $("#hStrat", host).addEventListener("click", (e) => {
     const b = e.target.closest("[data-k]");
@@ -825,7 +822,8 @@ export async function hybrid(host, state) {
       <div class="sec-h">
         <div><h2 class="h2">Watch the ranking turn over</h2>
           <p class="sub">Drag α and the films physically slide up and down. If the two models agreed,
-            nothing would move.</p></div>
+            nothing would move. Each bar shows how much of the score came from
+            <b>content (red)</b> and <b>collaborative (blue)</b>.</p></div>
         <span style="font-size:11px;color:var(--color-neutral-600)" class="score-only">
           ${moved ? `${moved} film${moved === 1 ? "" : "s"} moved` : "order held"}</span>
       </div>
@@ -833,11 +831,9 @@ export async function hybrid(host, state) {
 
       <div class="sec-h"><div>
         <h2 class="h2">Where the blended list comes from</h2>
-        <p class="sub">Content candidates on the left, collaborative on the right, flowing into the blend.</p>
+        <p class="sub">How many films in the hybrid's top 10 also appear in each method's own top 10.</p>
       </div></div>
-      <div class="chartbox score-only">${sankey(d.items)}</div>
-      <div id="hOverlap" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-        border-left:2px solid var(--color-divider)"></div>`;
+      <div id="hOverlap" class="cells" style="margin-top:0"></div>`;
 
     const list = $("#hList", body);
     d.items.forEach((f, i) => {
@@ -856,7 +852,7 @@ export async function hybrid(host, state) {
           <span class="score-only" style="display:flex;align-items:center;gap:12px;flex:none">
             <span class="hrow__split">
               <i style="background:${RED};width:${(f.content_part / total) * 100}%"></i>
-              <i style="background:${INK};width:${(f.cf_part / total) * 100}%"></i>
+              <i style="background:${CF};width:${(f.cf_part / total) * 100}%"></i>
             </span>
             <span class="hrow__v">${fmt.n(f.score, 4)}</span>
           </span>
@@ -896,7 +892,9 @@ export async function score(host, state) {
     "Which one is best? It depends what you ask",
     `Every model is retrained on the same <b>80% training split</b> and scored on ratings it has never
      seen — the newest 20% of each viewer's history. A temporal split, not a random one: predicting a
-     viewer's past from their future would be cheating.`) + `<div id="eBody"></div>`;
+     viewer's past from their future would be cheating.`,
+    "We hide the newest ratings of each viewer, ask every method to predict them, then check the answers. It is like an exam the models have never seen.")
+    + `<div id="eBody"></div>`;
 
   const body = $("#eBody", host);
   body.append(loading("Scoring seven models across 610 viewers"));
@@ -917,13 +915,17 @@ export async function score(host, state) {
   const swatch = (fam) => fam === "hybrid" ? RED
     : fam === "content" ? "var(--color-accent-500)" : fam === "collaborative" ? INK : "var(--color-neutral-500)";
 
+  const hybrid = rows.find((r) => r.model === "hybrid");
+  const itemKnn = rows.find((r) => r.model === "item-knn");
+  const contentRow = rows.find((r) => r.model === "content");
+
   body.innerHTML = `
     <div class="sec-h" style="margin-top:28px"><div>
-      <h2 class="h2">Seven models, seven metrics</h2>
-      <p class="sub">Each line is one model crossing all seven axes, normalised so up is always better.
-        Crossing lines are trade-offs: no model wins everywhere. Hover a table row to isolate its line.</p>
+      <h2 class="h2">Four questions, four charts</h2>
+      <p class="sub">The best model on each question is shown in red. No model wins every chart: that is the
+        main finding of this page.</p>
     </div></div>
-    <div class="chartbox score-only" id="parBox">${parallel(rows)}</div>
+    <div class="ov-grid2" id="eCharts"></div>
     <div class="tablewrap">
       <table class="tbl">
         <thead><tr>
@@ -944,18 +946,30 @@ export async function score(host, state) {
     <div class="bandred">
       <div class="bandred__k">Read the table sideways, not down</div>
       <h3>The hybrid beats both of its own parents. That is the whole argument.</h3>
-      <p>Content + item-kNN scores <b>0.0904</b> Prec@10 against 0.0840 for item-kNN alone and 0.0228
+      <p>Content + item-kNN scores <b>${fmt.n(hybrid.precision, 4)}</b> Prec@10 against
+        ${fmt.n(itemKnn.precision, 4)} for item-kNN alone and ${fmt.n(contentRow.precision, 4)}
         for content alone. SVD has the best RMSE of any single model yet ranks worse than item-kNN,
         which in turn predicts ratings worse than the trivial bias baseline. Optimising one does not
         give you the other.</p>
     </div>`;
 
-  const box = $("#parBox", body);
-  $("#evalBody", body).addEventListener("mouseover", (e) => {
-    const tr = e.target.closest("[data-model]");
-    if (tr) box.innerHTML = parallel(rows, tr.dataset.model);
-  });
-  $("#evalBody", body).addEventListener("mouseleave", () => { box.innerHTML = parallel(rows); });
+  const short = {
+    baseline: "Baseline", content: "Content-based", "item-knn": "Item-kNN", "user-knn": "User-kNN",
+    svd: "SVD", hybrid: "Hybrid (item-kNN)", "hybrid-svd": "Hybrid (SVD)",
+  };
+  const panel = (key, title, question, digits, lower, suffix = "") => {
+    const sorted = [...rows].sort((a, b) => (lower ? a[key] - b[key] : b[key] - a[key]));
+    return chartCard(title, question, barList(sorted.map((r) => ({
+      label: short[r.model] || r.label, value: r[key], display: `${fmt.n(r[key], digits)}${suffix}`,
+      tone: r[key] === sorted[0][key] ? "accent" : "muted", tip: r.label,
+    })), { label: title }));
+  };
+  $("#eCharts", body).append(
+    panel("precision", "Precision@10: are the top 10 films good?", "The share of the 10 films shown that the viewer really liked. Higher is better.", 4, false),
+    panel("ndcg", "NDCG@10: are the best films near the top?", "Like precision, with extra credit for ranking good films first. Higher is better.", 4, false),
+    panel("rmse", "RMSE: are the predicted ratings close?", "The typical error of a predicted rating, in stars. Lower is better.", 4, true),
+    panel("coverage", "Coverage: how much of the catalogue is used?", "The share of all films ever recommended to anyone. Higher is broader.", 1, false, "%"),
+  );
 }
 
 /* ═════════════════════════ 7 · PEOPLE ═════════════════════ */
@@ -963,7 +977,8 @@ export async function people(host, state) {
   host.innerHTML = head("Analysis · Compare viewers", "kicker--outline",
     "Same algorithm, different people, different films",
     `Personalisation is easy to claim and easy to fake. Run one algorithm across several viewers at
-     once and the differences — or the lack of them — become obvious.`) + `
+     once and the differences — or the lack of them — become obvious.`,
+    "If the recommendations are really personal, different people should get different films. This page puts them side by side to check.") + `
     <div class="seg" id="pSeg" style="margin-top:24px">
       ${segs([["content", "◈ Content"], ["collaborative", "◉ Collaborative"], ["hybrid", "◆ Hybrid"]],
         state.compareMethod)}

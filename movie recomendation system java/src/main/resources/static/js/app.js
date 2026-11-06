@@ -3,7 +3,8 @@
 import { api } from "./api.js?v=16";
 import { $, $$, el, esc, fmt, ICON, toast } from "./ui.js?v=16";
 import { closeDrawer } from "./drawer.js?v=16";
-import { closeReel } from "./reel.js?v=16";
+import { guide } from "./guide.js?v=16";
+import { openOverview } from "./overview.js?v=16";
 import * as scenes from "./scenes.js?v=16";
 import * as views from "./views.js?v=16";
 
@@ -18,8 +19,6 @@ const state = {
   comparePicks: [],
   users: { builtin: [], custom: [] },
   showScores: true,
-  reelData: null,
-  stopShelf: null,
 };
 
 const VIEWS = {
@@ -31,14 +30,21 @@ const VIEWS = {
   hybrid: views.hybrid,
   score: views.score,
   people: views.people,
+  guide,
 };
 
 state.go = (view) => navigate(view);
 state.openModal = () => openPicker();
+state.openOverview = (step = 0) => openOverview(state, step);
+state.setUser = (id) => {
+  state.userId = id;
+  state.comparePicks = [];
+  renderUser();
+  renderUserList();
+};
 state.onRatingsChanged = async (n) => {
   const u = activeUser();
   if (u) u.n_ratings = n;
-  state.reelData = null;
   await loadUsers();
 };
 
@@ -171,11 +177,17 @@ const DB_ICON = '<svg class="icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" r
 function renderTmdb() {
   const t = state.status?.tmdb || {};
   const node = $("#tmdbStatus");
-  node.className = `tmdb ${t.available ? "" : "is-bad"}`;
-  node.innerHTML = t.available
-    ? `${DB_ICON}<span>TMDB · ${esc(t.route)}<br>
-        <span id="enrichLine"><b>${fmt.int(t.cached_titles)}</b> / <b>9,724</b> films enriched</span></span>`
-    : `${DB_ICON}<span>Posters unavailable<br>${esc(t.reason || "no route to TMDB")}</span>`;
+  node.className = `tmdb ${t.available || t.cached_titles ? "" : "is-bad"}`;
+  if (t.available) {
+    node.innerHTML = `${DB_ICON}<span>TMDB · ${esc(t.route)}<br>
+        <span id="enrichLine"><b>${fmt.int(t.cached_titles)}</b> / <b>9,724</b> films enriched</span></span>`;
+  } else if (t.cached_titles) {
+    /* no API key here, but the saved film details and poster links still work */
+    node.innerHTML = `${DB_ICON}<span>Saved TMDB film details<br>
+        <b>${fmt.int(t.cached_titles)}</b> / <b>9,724</b> films enriched</span>`;
+  } else {
+    node.innerHTML = `${DB_ICON}<span>Posters unavailable<br>${esc(t.reason || "no route to TMDB")}</span>`;
+  }
 }
 
 async function pollEnrichment() {
@@ -258,9 +270,6 @@ function renderUserList(filter = "") {
 async function navigate(view) {
   state.view = view;
   closeDrawer();
-  closeReel();
-  state.stopShelf?.();
-  state.stopShelf = null;
   scenes.unmountAll();
 
   $$("#nav .navitem").forEach((b) => b.classList.toggle("is-on", b.dataset.view === view));
@@ -282,6 +291,8 @@ function wire() {
     const b = e.target.closest("[data-view]");
     if (b) navigate(b.dataset.view);
   });
+  $("#startOverview").addEventListener("click", () => state.openOverview());
+  $("#startOverviewSm").addEventListener("click", () => state.openOverview());
 
   const btn = $("#userBtn");
   const panel = $("#userPanel");
@@ -315,7 +326,6 @@ function wire() {
     if (!b) return;
     state.userId = Number(b.dataset.u);
     state.comparePicks = [];
-    state.reelData = null;
     panel.hidden = true;
     $("#userBtn").setAttribute("aria-expanded", "false");
     renderUser();
@@ -470,7 +480,6 @@ async function createUser() {
     await loadUsers();
     state.userId = user.userId;
     state.comparePicks = [];
-    state.reelData = null;
     renderUser();
     renderUserList();
     closePicker();

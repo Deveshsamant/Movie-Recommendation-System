@@ -5,3 +5,7 @@
 /config.json
 /data/
 /cache/
+
+# The private Java copy a start file may download, and the zip made for sharing
+/runtime/
+/*.zip

@@ -89,6 +89,29 @@ class ApiSmokeTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void overviewSummarisesTheRatings() throws Exception {
+        String json = mvc.perform(get("/api/overview"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rating_histogram", hasSize(10)))
+                .andExpect(jsonPath("$.genres[0].ratings").isNumber())
+                .andExpect(jsonPath("$.decades.length()", greaterThan(0)))
+                .andExpect(jsonPath("$.long_tail.curve[0].ratings_pct").value(0.0))
+                .andExpect(jsonPath("$.long_tail.curve[50].films_pct").value(100))
+                .andExpect(jsonPath("$.long_tail.curve[50].ratings_pct").value(100.0))
+                .andReturn().getResponse().getContentAsString();
+
+        Map<String, Object> overview = mapper.readValue(json, Map.class);
+        int fromHistogram = ((java.util.List<Map<String, Object>>) overview.get("rating_histogram")).stream()
+                .mapToInt(row -> (int) row.get("count"))
+                .sum();
+        Map<String, Object> sparsity = (Map<String, Object>) overview.get("sparsity");
+        Map<String, Object> split = (Map<String, Object>) overview.get("split");
+        assertEquals(sparsity.get("filled_cells"), fromHistogram);
+        assertEquals(fromHistogram, (int) split.get("train_ratings") + (int) split.get("test_ratings"));
+    }
+
+    @Test
     void catalogueEndpoints() throws Exception {
         mvc.perform(get("/api/genres")).andExpect(jsonPath("$.genres", hasSize(5)));
         mvc.perform(get("/api/movies/1"))

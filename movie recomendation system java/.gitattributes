@@ -2,3 +2,6 @@
 # even though the repository's root .gitattributes normalises everything else to LF.
 *.bat text eol=crlf
 *.cmd text eol=crlf
+*.txt text eol=crlf
+*.sh text eol=lf
+*.command text eol=lf

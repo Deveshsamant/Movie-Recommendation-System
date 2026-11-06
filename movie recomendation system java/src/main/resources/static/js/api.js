@@ -34,6 +34,7 @@ export const api = {
   clearCache: () => cache.clear(),
 
   status: () => get("/status"),
+  overview: () => get("/overview", {}, { cacheable: true }),
   enrichStatus: () => get("/enrich/status"),
 
   users: () => get("/users"),

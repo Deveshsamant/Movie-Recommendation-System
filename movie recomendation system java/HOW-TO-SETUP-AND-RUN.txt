@@ -1,0 +1,92 @@
+MOVIE RECOMMENDER SYSTEM - HOW TO SET UP AND RUN
+=================================================
+
+Setup is automatic. You only need to unzip the file and double-click one file.
+
+
+STEP 1: UNZIP THE FILE
+----------------------
+Right-click the zip file and choose "Extract All" (on a Mac, double-click it).
+Important: do not run anything from inside the zip. Unzip it first.
+
+
+STEP 2: DOUBLE-CLICK THE START FILE FOR YOUR COMPUTER
+-----------------------------------------------------
+Open the new folder and find the file for your computer:
+
+  Windows   START-Windows.bat
+  Mac       START-Mac.command   (the first time: right-click it, choose Open, then Open)
+  Linux     In a terminal, open the folder and run:  sh START-Linux.sh
+
+The website then opens in your browser by itself.
+Keep the small black window open while you use the website.
+To stop the website, close that window.
+
+To use it again later, just double-click the same start file.
+
+
+WHAT HAPPENS THE FIRST TIME
+---------------------------
+The website needs Java, version 17 or newer.
+
+  - If the computer already has it, the website starts straight away.
+  - If not, the start file downloads a private copy of Java (about 45 MB) by itself.
+    It is saved in a folder called "runtime" inside this folder.
+    It needs no admin password and changes nothing else on the computer.
+    This happens only once.
+
+Nothing else needs to be installed. The film data and trained models are included.
+
+
+INTERNET
+--------
+You need the internet for the Java download, if there is one, and to show posters and
+the page's fonts. Everything else works offline: recommendations, charts, and results.
+
+
+HOW TO PRESENT THE PROJECT
+--------------------------
+  1. Click the red "Start overview" button for a 15-step guided presentation.
+  2. Use the left and right arrow keys to move between steps.
+  3. Press N to show suggested speaker notes. Press A for auto-play. Press Esc to close.
+  4. Click "See it live" on a step to open the real page, then "Back to overview".
+  5. Open "Project guide" for a summary, a glossary, and answers to common questions.
+
+
+IF SOMETHING GOES WRONG
+-----------------------
+"Windows protected your PC" appears
+    Click "More info", then "Run anyway". Windows shows this for many downloaded files.
+
+"The website's program file was not found"
+    The zip was not unzipped. Follow Step 1, then run the start file from the new folder.
+
+"Java could not be downloaded"
+    Check the internet connection and try again. Or install Java 17 or newer from
+    https://adoptium.net/ and double-click the start file again.
+
+The browser does not open by itself
+    Look in the black window for a line that says "ready at", such as
+    "ready at http://localhost:8000", and type that address into your browser.
+
+"port 8000 is already in use"
+    This is not a problem. The website picks the next free port and tells you which one.
+
+The website shows no posters
+    Check the internet connection. The recommendations still work without posters.
+
+A Mac says the file cannot be opened
+    Right-click START-Mac.command, choose Open, then Open.
+    If that does not help, open Terminal, go to this folder, and run:  sh START-Linux.sh
+
+
+OPTIONAL EXTRAS
+---------------
+Fetching new film details from TMDB
+    This copy has no TMDB API key, so it uses the film details saved in the "cache" folder.
+    To use your own free key, copy config.example.json to config.json and paste the key in.
+
+Reading or changing the code
+    The Java code is in src/main/java and the web pages are in src/main/resources/static.
+    After changing the code, run setup.bat to rebuild. Rebuilding needs a JDK, not only Java.
+    README.md explains the whole project.

@@ -21,6 +21,7 @@ export function esc(value) {
    take var() — scenes.js resolves real values through cssVar(). */
 export const RED = "var(--color-accent)";
 export const INK = "var(--color-text)";
+export const CF = "var(--series-cf)"; /* collaborative, wherever it is charted */
 export const MID = "var(--color-neutral-500)";
 export const PAPER = "var(--color-bg)";
 
@@ -87,7 +88,7 @@ export function filmCard(movie, opts = {}) {
         ${why ? `<div class="score-only" style="margin-top:9px">
             <div class="film__why">${why}</div>
             <div class="film__meter"><i class="bar-grow" style="width:${fmt.clamp(meter ?? 0)};
-              background:${tone === "ink" ? INK : RED}"></i></div>
+              background:${tone === "ink" ? CF : RED}"></i></div>
           </div>` : ""}
         <div class="film__foot">★ ${fmt.n(movie.avg_rating, 1)} ·
           ${fmt.int(movie.n_ratings)} ratings</div>
@@ -203,95 +204,6 @@ export function convergence(values) {
       letter-spacing="0.08em">RMSE ${max.toFixed(3)} → ${min.toFixed(3)}</text>
     <text x="324" y="124" text-anchor="end" font-size="9" font-weight="700"
       fill="var(--color-neutral-500)" letter-spacing="0.08em">${values.length} EPOCHS</text>
-  </svg>`;
-}
-
-/** Alluvial: content candidates left, collaborative right, flowing into the blend. */
-export function sankey(rows) {
-  if (!rows.length) return "";
-  const body = rows
-    .map((f, i) => {
-      const y = 40 + i * 21;
-      const mid = y + 6.5;
-      const total = f.blend || 1;
-      const cShare = f.content_part / total;
-      const fShare = f.cf_part / total;
-      const cW = Math.max(3, cShare * 190);
-      const fW = Math.max(3, fShare * 190);
-      return `<g>
-        <rect x="${(200 - cW).toFixed(1)}" y="${y}" width="${cW.toFixed(1)}" height="13"
-          fill="${RED}" opacity="0.85"></rect>
-        <rect x="700" y="${y}" width="${fW.toFixed(1)}" height="13" fill="${INK}" opacity="0.85"></rect>
-        <path d="M200 ${mid} C 320 ${mid}, 340 ${mid}, 430 ${mid}" stroke="${RED}"
-          stroke-width="${Math.max(1.2, cShare * 13).toFixed(2)}" fill="none" opacity="0.42"></path>
-        <path d="M700 ${mid} C 600 ${mid}, 560 ${mid}, 470 ${mid}" stroke="${INK}"
-          stroke-width="${Math.max(1.2, fShare * 13).toFixed(2)}" fill="none" opacity="0.42"></path>
-        <rect x="430" y="${y}" width="40" height="13"
-          fill="${f.cf_part > f.content_part ? INK : RED}"></rect>
-        <text x="486" y="${y + 10.5}" font-size="10.5" font-weight="600"
-          fill="${INK}">${esc(f.title.slice(0, 34))}</text>
-      </g>`;
-    })
-    .join("");
-  return `<svg viewBox="0 0 900 ${60 + rows.length * 21}" role="img"
-    aria-label="Where the blended list comes from" style="width:100%;height:auto;display:block">
-    <text x="8" y="18" font-size="10" font-weight="800" fill="var(--color-neutral-600)"
-      letter-spacing="0.12em">CONTENT CANDIDATES</text>
-    <text x="430" y="18" font-size="10" font-weight="800" fill="var(--color-neutral-600)"
-      letter-spacing="0.12em">BLEND</text>
-    <text x="700" y="18" font-size="10" font-weight="800" fill="var(--color-neutral-600)"
-      letter-spacing="0.12em">COLLABORATIVE</text>
-    ${body}
-  </svg>`;
-}
-
-/** Parallel coordinates: one line per model across every metric, up = better. */
-export function parallel(rows, hoverKey = null) {
-  const axes = [
-    ["RMSE", "rmse", true], ["MAE", "mae", true], ["Prec@10", "precision", false],
-    ["NDCG", "ndcg", false], ["Hit rate", "hit_rate", false],
-    ["Coverage", "coverage", false], ["Novelty", "novelty", false],
-  ];
-  const x = (i) => 60 + (i / (axes.length - 1)) * 780;
-  const ranges = axes.map(([, k]) => [
-    Math.min(...rows.map((r) => r[k] ?? 0)),
-    Math.max(...rows.map((r) => r[k] ?? 0)),
-  ]);
-  const y = (v, i) => {
-    const [lo, hi] = ranges[i];
-    let t = ((v ?? 0) - lo) / (hi - lo || 1);
-    if (axes[i][2]) t = 1 - t;   // lower is better, so invert
-    return 254 - t * 208;
-  };
-  const famColor = (fam) =>
-    fam === "hybrid" ? RED
-      : fam === "content" ? "var(--color-accent-500)"
-        : fam === "collaborative" ? INK : MID;
-
-  const axisMarks = axes
-    .map(([label], i) => `<g>
-      <line x1="${x(i).toFixed(1)}" y1="34" x2="${x(i).toFixed(1)}" y2="254" stroke="${INK}" stroke-width="2"></line>
-      <text x="${x(i).toFixed(1)}" y="274" text-anchor="middle" font-size="9.5" font-weight="800"
-        fill="var(--color-neutral-600)" letter-spacing="0.09em">${label.toUpperCase()}</text>
-    </g>`)
-    .join("");
-  const lines = rows
-    .map((r, ri) => {
-      const d = axes.map(([, k], i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(r[k], i).toFixed(1)}`).join(" ");
-      const dim = hoverKey && hoverKey !== r.model;
-      return `<path data-line="${esc(r.model)}" d="${d}" fill="none" stroke="${famColor(r.family)}"
-        stroke-width="${r.family === "hybrid" ? 3 : 2}" opacity="${dim ? 0.12 : 0.9}"
-        stroke-dasharray="2600" stroke-dashoffset="2600" style="transition:opacity .2s">
-        <animate attributeName="stroke-dashoffset" from="2600" to="0" dur="1.1s"
-          begin="${(ri * 0.09).toFixed(2)}s" fill="freeze"></animate>
-      </path>`;
-    })
-    .join("");
-  return `<svg viewBox="0 0 900 300" role="img" aria-label="Seven models across seven metrics"
-    style="width:100%;height:auto;display:block">
-    <text x="60" y="20" font-size="9.5" font-weight="800" fill="var(--color-neutral-600)"
-      letter-spacing="0.1em">UP IS BETTER ON EVERY AXIS · RMSE AND MAE INVERTED</text>
-    ${axisMarks}${lines}
   </svg>`;
 }
 
